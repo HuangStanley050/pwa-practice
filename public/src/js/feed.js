@@ -31,15 +31,23 @@ function closeCreatePostModal() {
 shareImageButton.addEventListener("click", openCreatePostModal);
 
 closeCreatePostModalButton.addEventListener("click", closeCreatePostModal);
-// const onSaveButtonClicked = e => {
-//   console.log("clicked");
-//   if ("caches" in window) {
-//     caches.open("user-requested").then(cache => {
-//       cache.add("https://httpbin.org/get");
-//       cache.add("/src/images/sf-boat.jpg");
-//     });
-//   }
-// };
+
+const onSaveButtonClicked = e => {
+  console.log("clicked");
+  if ("caches" in window) {
+    caches.open("user-requested").then(cache => {
+      cache.add("https://httpbin.org/get");
+      cache.add("/src/images/sf-boat.jpg");
+    });
+  }
+};
+
+const clearCards = () => {
+  while (sharedMomentsArea.hasChildNodes()) {
+    sharedMomentsArea.removeChild(sharedMomentsArea.lastChild);
+  }
+};
+
 function createCard() {
   var cardWrapper = document.createElement("div");
   cardWrapper.className = "shared-moment-card mdl-card mdl-shadow--2dp";
@@ -66,11 +74,32 @@ function createCard() {
   componentHandler.upgradeElement(cardWrapper);
   sharedMomentsArea.appendChild(cardWrapper);
 }
-
-fetch("https://httpbin.org/get")
+const url = "https://httpbin.org/get";
+let networkDataReceived = false;
+fetch(url)
   .then(function(res) {
     return res.json();
   })
   .then(function(data) {
+    networkDataReceived = true;
+    console.log("from web: ", data);
+    clearCards();
     createCard();
   });
+
+if ("caches" in window) {
+  caches
+    .match(url)
+    .then(res => {
+      if (res) {
+        return res.json();
+      }
+    })
+    .then(data => {
+      console.log("from cache: ", data);
+      if (!networkDataReceived) {
+        clearCards();
+        createCard();
+      }
+    });
+}
