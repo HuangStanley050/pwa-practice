@@ -1,5 +1,6 @@
 importScripts("/src/js/idb.js");
-var CACHE_STATIC_NAME = "static-v15";
+importScripts("/src/js/utility.js");
+var CACHE_STATIC_NAME = "static-v18";
 var CACHE_DYNAMIC_NAME = "dynamic-v2";
 var STATIC_FILES = [
   "/",
@@ -7,7 +8,7 @@ var STATIC_FILES = [
   "/offline.html",
   "/src/js/app.js",
   "/src/js/feed.js",
-  "/scr/js/idb.js",
+  "/src/js/idb.js",
   "/src/js/promise.js",
   "/src/js/fetch.js",
   "/src/js/material.min.js",
@@ -18,12 +19,6 @@ var STATIC_FILES = [
   "https://fonts.googleapis.com/icon?family=Material+Icons",
   "https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css"
 ];
-
-let dbPromise = idb.open("posts-store", 1, db => {
-  if (!db.objectStoreNames.contains("posts")) {
-    db.createObjectStore("posts", {keyPath: "id"});
-  }
-});
 
 // function trimCache(cacheName, maxItems) {
 //   caches.open(cacheName)
@@ -81,12 +76,15 @@ self.addEventListener("fetch", function(event) {
   var url = "https://pwagram-bd625.firebaseio.com/Posts";
   if (event.request.url.indexOf(url) > -1) {
     event.respondWith(
-      caches.open(CACHE_DYNAMIC_NAME).then(function(cache) {
-        return fetch(event.request).then(function(res) {
-          // trimCache(CACHE_DYNAMIC_NAME, 3);
-          cache.put(event.request, res.clone());
-          return res;
+      fetch(event.request).then(function(res) {
+        // trimCache(CACHE_DYNAMIC_NAME, 3);
+        let clonedRes = res.clone();
+        clonedRes.json().then(data => {
+          for (let key in data) {
+            writeData("posts", data[key]);
+          }
         });
+        return res;
       })
     );
   } else if (isInArray(event.request.url, STATIC_FILES)) {
